@@ -126,7 +126,7 @@ class MetricsRegistry(object):
     def create_sink(self):
         return None
 
-    def timer(self, key, tags=None):
+    def timer(self, key, tags=None, sample=None):
         """
         Gets a timer based on a key, creates a new one if it does not exist.
 
@@ -136,6 +136,9 @@ class MetricsRegistry(object):
         :param tags: tags attached to the timer (e.g. {'region': 'us-west-1'})
         :type tags: C{dict}
 
+        :param sample: a sample manager, default is ExpDecayingSample
+        :type sample: L{Object}
+
         :return: L{Timer}
         """
         metric_key = BaseMetric(key, tags)
@@ -144,7 +147,8 @@ class MetricsRegistry(object):
                 key=key,
                 clock=self._clock,
                 sink=self.create_sink(),
-                tags=tags
+                tags=tags,
+                sample=sample,
             )
         return self._timers[metric_key]
 
@@ -338,8 +342,8 @@ class RegexRegistry(MetricsRegistry):
         key = "/".join((v for match in matches for v in match.groups() if v))
         return key
 
-    def timer(self, key, tags=None):
-        return super(RegexRegistry, self).timer(key=self._get_key(key), tags=tags)
+    def timer(self, key, tags=None, sample=None):
+        return super(RegexRegistry, self).timer(key=self._get_key(key), tags=tags, sample=sample)
 
     def histogram(self, key, tags=None):
         return super(RegexRegistry, self).histogram(key=self._get_key(key), tags=tags)
@@ -383,8 +387,8 @@ def meter(key, tags=None):
     return _global_registry.meter(key, tags)
 
 
-def timer(key, tags=None):
-    return _global_registry.timer(key, tags)
+def timer(key, tags=None, sample=None):
+    return _global_registry.timer(key, tags, sample=sample)
 
 
 def event(key, tags=None):
