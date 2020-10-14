@@ -94,6 +94,7 @@ class InfluxReporter(Reporter):
         # If you don't have anything nice to say than don't say nothing
         if influx_lines:
             post_data = "\n".join(influx_lines)
+            LOG.error("Reporting now: \n%s", post_data)
             url = self._get_url()
             self._try_send(url, post_data)
 
