@@ -3,6 +3,7 @@
 import base64
 import logging
 import re
+from enum import Enum
 
 from six import iteritems
 
@@ -26,6 +27,14 @@ DEFAULT_INFLUX_USERNAME = None
 DEFAULT_INFLUX_PASSWORD = None
 DEFAULT_INFLUX_PROTOCOL = "http"
 
+class ReportingPrecision(Enum):
+    HOURS = "h"
+    MINUTES = "m"
+    SECONDS = "s"
+    MILLISECONDS = "ms"
+    MICROSECONDS = "u"
+    NANOSECONDS = "ns"
+
 
 class InfluxReporter(Reporter):
     """
@@ -47,7 +56,13 @@ class InfluxReporter(Reporter):
             autocreate_database=False,
             clock=None,
             global_tags=None,
+            reporting_precision = ReportingPrecision.SECONDS
     ):
+        """
+        :param reporting_precision: The precision in which the reporter reports to influx.
+        The default is seconds. This is a tradeoff between precision and performance. More
+        coarse precision may result in significant improvements in compression and vice versa.
+        """
         super(InfluxReporter, self).__init__(registry, reporting_interval, clock)
         self.prefix = prefix
         self.database = database
@@ -63,6 +78,8 @@ class InfluxReporter(Reporter):
             self.global_tags = {}
         else:
             self.global_tags = global_tags
+
+        self.reporting_precision = reporting_precision
 
     def _create_database(self):
         url = "%s://%s:%s/query" % (self.protocol, self.server, self.port)
@@ -87,10 +104,14 @@ class InfluxReporter(Reporter):
     def report_now(self, registry=None, timestamp=None):
         if self.autocreate_database and not self._did_create_database:
             self._create_database()
-        timestamp = timestamp or int(round(self.clock.time()))
+        timestamp = timestamp or self.clock.time()
+        timestamp_in_reporting_precision = _to_timestamp_in_precision(
+            timestamp=timestamp,
+            precision=self.reporting_precision
+        )
         metrics = (registry or self.registry).dump_metrics(key_is_metric=True)
 
-        influx_lines = self._get_influx_protocol_lines(metrics, timestamp)
+        influx_lines = self._get_influx_protocol_lines(metrics, timestamp_in_reporting_precision)
         # If you don't have anything nice to say than don't say nothing
         if influx_lines:
             post_data = "\n".join(influx_lines)
@@ -120,11 +141,15 @@ class InfluxReporter(Reporter):
             for event in metric_values.get("events", []):
                 values = InfluxReporter._stringify_values(event.values)
 
+                event_timestamp = _to_timestamp_in_precision(
+                    timestamp=event.time,
+                    precision=self.reporting_precision
+                )
                 line = "%s%s %s %s" % (
                     table,
                     tags,
                     values,
-                    int(round(event.time))
+                    event_timestamp
                 )
 
                 lines.append(line)
@@ -160,7 +185,7 @@ class InfluxReporter(Reporter):
         return ""
 
     def _get_url(self):
-        path = "/write?db=%s&precision=s" % self.database
+        path = "/write?db=%s&precision=%s" % (self.database, self.reporting_precision.value)
         return "%s://%s:%s%s" % (self.protocol, self.server, self.port, path)
 
     def _add_auth_data(self, request):
@@ -185,6 +210,27 @@ class InfluxReporter(Reporter):
                 data,
                 response
             )
+
+def _to_timestamp_in_precision(timestamp: float, precision: ReportingPrecision) -> int:
+    if precision == ReportingPrecision.HOURS:
+        return int(timestamp / 60 / 60)
+
+    if precision == ReportingPrecision.MINUTES:
+        return int(timestamp / 60)
+
+    if precision == ReportingPrecision.SECONDS:
+        return int(timestamp)
+
+    if precision == ReportingPrecision.MILLISECONDS:
+        return int(timestamp * 1e3)
+
+    if precision == ReportingPrecision.MICROSECONDS:
+        return int(timestamp * 1e6)
+
+    if precision == ReportingPrecision.NANOSECONDS:
+        return int(timestamp * 1e9)
+
+    raise Exception("Unsupported ReportingPrecision")
 
 
 def _format_field_value(value):
