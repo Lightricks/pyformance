@@ -8,7 +8,7 @@ from .base_metric import BaseMetric
 
 @dataclass
 class EventPoint:
-    time: int
+    time: float
     values: Dict[str, Any]
 
 
