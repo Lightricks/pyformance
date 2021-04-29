@@ -1,3 +1,5 @@
+from threading import Lock
+
 from .base_metric import BaseMetric
 
 
@@ -48,6 +50,7 @@ class SimpleGauge(Gauge):
     def __init__(self, key, value=float("nan"), tags=None):
         "constructor accepts initial value"
         super(SimpleGauge, self).__init__(key, tags)
+        self.lock = Lock()
         self._value = value
 
     def get_value(self):
@@ -56,5 +59,5 @@ class SimpleGauge(Gauge):
 
     def set_value(self, value):
         "setter changes current value"
-        # XXX: add locking?
-        self._value = value
+        with self.lock:
+            self._value = value
