@@ -56,12 +56,15 @@ class InfluxReporter(Reporter):
             autocreate_database=False,
             clock=None,
             global_tags=None,
-            reporting_precision = ReportingPrecision.SECONDS
+            reporting_precision = ReportingPrecision.SECONDS,
+            retention_policy="autogen"
     ):
         """
         :param reporting_precision: The precision in which the reporter reports to influx.
         The default is seconds. This is a tradeoff between precision and performance. More
         coarse precision may result in significant improvements in compression and vice versa.
+        :param retention_policy: The name of the retention policy of your database,
+        InluxDB retention policy default value is "autogen".
         """
         super(InfluxReporter, self).__init__(registry, reporting_interval, clock)
         self.prefix = prefix
@@ -73,6 +76,7 @@ class InfluxReporter(Reporter):
         self.server = server
         self.autocreate_database = autocreate_database
         self._did_create_database = False
+        self.retention_policy = retention_policy
 
         if global_tags is None:
             self.global_tags = {}
@@ -185,7 +189,7 @@ class InfluxReporter(Reporter):
         return ""
 
     def _get_url(self):
-        path = "/write?db=%s&precision=%s" % (self.database, self.reporting_precision.value)
+        path = "/write?db=%s&precision=%s&rp=%s" % (self.database, self.reporting_precision.value, self.retention_policy)
         return "%s://%s:%s%s" % (self.protocol, self.server, self.port, path)
 
     def _add_auth_data(self, request):
