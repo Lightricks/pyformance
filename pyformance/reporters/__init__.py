@@ -45,6 +45,12 @@ def InfluxReporter(*args, **kwargs):
     return cls(*args, **kwargs)
 
 
+def AsyncInfluxReporter(*args, **kwargs):
+    from .async_influx_reporter import AsyncInfluxReporter as cls
+
+    return cls(*args, **kwargs)
+
+
 def OpenTSDBReporter(*args, **kwargs):
     from .opentsdb_reporter import OpenTSDBReporter as cls
 
