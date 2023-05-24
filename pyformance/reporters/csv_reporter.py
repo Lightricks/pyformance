@@ -39,11 +39,12 @@ class CsvReporter(Reporter):
         timestamp = timestamp or int(round(self.clock.time()))
         dt = datetime.datetime(1970, 1, 1) + datetime.timedelta(seconds=timestamp)
         date = dt.strftime("%Y-%m-%d %H:%M:%S")
-        metrics = registry.dump_metrics()
+        metrics = registry.dump_metrics(key_is_metric=True)
         for key in metrics.keys():
             values = metrics[key]
+            values["tags"] = key.tags
             value_keys = list(sorted(values.keys()))
-            target = os.path.join(self.path, "%s.csv" % key)
+            target = os.path.join(self.path, "%s.csv" % key.key)
             f = self.files.get(target, None)
             if f is None:
                 if not os.path.exists(target):
@@ -57,6 +58,7 @@ class CsvReporter(Reporter):
                 cols.append(values[vk])
             f.write("%s\n" % self.separator.join(map(str, cols)))
             f.flush()
+
 
     def __enter__(self):
         return self
