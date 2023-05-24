@@ -45,7 +45,7 @@ class TestCsvReporter(TimedTestCase):
 
         output = open(output_filename).read()
         self.assertEqual(
-            output.splitlines(), ["timestamp\tvalue", "1970-01-01 00:00:00\t123"]
+            output.splitlines(), ["timestamp\ttags\tvalue", "1970-01-01 00:00:00\t{}\t123"]
         )
 
 
