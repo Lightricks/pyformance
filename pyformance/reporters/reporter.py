@@ -1,8 +1,8 @@
 import time
 from threading import Thread, Event
 import six
-from ..registry import global_registry
-from ..decorators import get_qualname
+from pyformance.registry import global_registry
+from pyformance.decorators import get_qualname
 
 
 class Reporter(object):
