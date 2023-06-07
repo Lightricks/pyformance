@@ -4,3 +4,4 @@ pyformance.egg-info
 /build/
 /dist/
 *.py[cod]
+playground

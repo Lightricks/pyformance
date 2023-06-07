@@ -45,6 +45,12 @@ def InfluxReporter(*args, **kwargs):
     return cls(*args, **kwargs)
 
 
+def LineProtocolReporter(*args, **kwargs):
+    from .line_protocol_reporter import LineProtocolReporter as cls
+
+    return cls(*args, **kwargs)
+
+
 def OpenTSDBReporter(*args, **kwargs):
     from .opentsdb_reporter import OpenTSDBReporter as cls
 

@@ -3,9 +3,11 @@
 import base64
 import logging
 import re
-from enum import Enum
+from pathlib import Path
 
 from six import iteritems
+
+from .utils import ReportingPrecision, to_timestamp_in_precision
 
 try:
     from urllib2 import quote, urlopen, Request, URLError
@@ -26,15 +28,6 @@ DEFAULT_INFLUX_DATABASE = "metrics"
 DEFAULT_INFLUX_USERNAME = None
 DEFAULT_INFLUX_PASSWORD = None
 DEFAULT_INFLUX_PROTOCOL = "http"
-
-class ReportingPrecision(Enum):
-    HOURS = "h"
-    MINUTES = "m"
-    SECONDS = "s"
-    MILLISECONDS = "ms"
-    MICROSECONDS = "u"
-    NANOSECONDS = "ns"
-
 
 class InfluxReporter(Reporter):
     """
@@ -77,6 +70,7 @@ class InfluxReporter(Reporter):
         self.autocreate_database = autocreate_database
         self._did_create_database = False
         self.retention_policy = retention_policy
+        self.reported_files = []
 
         if global_tags is None:
             self.global_tags = {}
@@ -109,7 +103,7 @@ class InfluxReporter(Reporter):
         if self.autocreate_database and not self._did_create_database:
             self._create_database()
         timestamp = timestamp or self.clock.time()
-        timestamp_in_reporting_precision = _to_timestamp_in_precision(
+        timestamp_in_reporting_precision = to_timestamp_in_precision(
             timestamp=timestamp,
             precision=self.reporting_precision
         )
@@ -145,7 +139,7 @@ class InfluxReporter(Reporter):
             for event in metric_values.get("events", []):
                 values = InfluxReporter._stringify_values(event.values)
 
-                event_timestamp = _to_timestamp_in_precision(
+                event_timestamp = to_timestamp_in_precision(
                     timestamp=event.time,
                     precision=self.reporting_precision
                 )
@@ -159,6 +153,25 @@ class InfluxReporter(Reporter):
                 lines.append(line)
 
         return lines
+
+    def report_from_files(self, files_path: Path) -> None:
+        """
+        Report to Influx from list of file in a given directory.
+        NOTE: The files in the path must be in line protocol format.
+
+        :param files_path: The path where all the files stored.
+        :return: None
+        """
+        if not files_path.exists():
+            raise FileNotFoundError
+
+        files = [f for f in files_path.glob("*.txt") if f not in self.reported_files]
+
+        for file in files:
+            with open(file, "r") as metrics_file:
+                url = self._get_url()
+                if self._try_send(url, metrics_file.read()):
+                    self.reported_files.append(file)
 
     @staticmethod
     def _stringify_values(metric_values):
@@ -196,16 +209,16 @@ class InfluxReporter(Reporter):
         auth = _encode_username(self.username, self.password)
         request.add_header("Authorization", "Basic %s" % auth.decode('utf-8'))
 
-    def _try_send(self, url, data):
+    def _try_send(self, url, data) -> bool:
         request = Request(url, data.encode("utf-8"))
         if self.username:
             self._add_auth_data(request)
         try:
             response = urlopen(request)
             response.read()
+            return True
         except URLError as err:
-            response = err.read().decode("utf-8")
-
+            response = str(err)
             LOG.warning(
                 "Cannot write to %s: %s ,url: %s, data: %s, response: %s",
                 self.server,
@@ -214,28 +227,7 @@ class InfluxReporter(Reporter):
                 data,
                 response
             )
-
-def _to_timestamp_in_precision(timestamp: float, precision: ReportingPrecision) -> int:
-    if precision == ReportingPrecision.HOURS:
-        return int(timestamp / 60 / 60)
-
-    if precision == ReportingPrecision.MINUTES:
-        return int(timestamp / 60)
-
-    if precision == ReportingPrecision.SECONDS:
-        return int(timestamp)
-
-    if precision == ReportingPrecision.MILLISECONDS:
-        return int(timestamp * 1e3)
-
-    if precision == ReportingPrecision.MICROSECONDS:
-        return int(timestamp * 1e6)
-
-    if precision == ReportingPrecision.NANOSECONDS:
-        return int(timestamp * 1e9)
-
-    raise Exception("Unsupported ReportingPrecision")
-
+            return False
 
 def _format_field_value(value):
     if isinstance(value, MarkInt):

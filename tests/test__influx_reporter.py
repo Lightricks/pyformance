@@ -50,7 +50,7 @@ class TestInfluxReporter(TimedTestCase):
         with mock.patch.object(influx_reporter, "_try_send") as send_mock:
             influx_reporter.report_now()
 
-            expected_url = "http://127.0.0.1:8086/write?db=metrics&precision=s"
+            expected_url = "http://127.0.0.1:8086/write?db=metrics&precision=s&rp=autogen"
             expected_data = "cpu value=65 " + self.clock.time_string()
             send_mock.assert_called_once_with(expected_url, expected_data)
 
@@ -66,7 +66,7 @@ class TestInfluxReporter(TimedTestCase):
         with mock.patch.object(influx_reporter, "_try_send") as send_mock:
             influx_reporter.report_now()
 
-            expected_url = "http://127.0.0.1:8086/write?db=metrics&precision=s"
+            expected_url = "http://127.0.0.1:8086/write?db=metrics&precision=s&rp=autogen"
             expected_data = "cpu,region=us\\ -\\ west value=65 " + \
                             self.clock.time_string()
             send_mock.assert_called_once_with(expected_url, expected_data)
@@ -84,7 +84,7 @@ class TestInfluxReporter(TimedTestCase):
         with mock.patch.object(influx_reporter, "_try_send") as send_mock:
             influx_reporter.report_now()
 
-            expected_url = "http://127.0.0.1:8086/write?db=metrics&precision=s"
+            expected_url = "http://127.0.0.1:8086/write?db=metrics&precision=s&rp=autogen"
             expected_data = "cpu,stage=dev,region=us-west-2 value=65 " + \
                             self.clock.time_string()
             send_mock.assert_called_once_with(expected_url, expected_data)
@@ -105,7 +105,7 @@ class TestInfluxReporter(TimedTestCase):
         with mock.patch.object(influx_reporter, "_try_send") as send_mock:
             influx_reporter.report_now()
 
-            expected_url = "http://127.0.0.1:8086/write?db=metrics&precision=s"
+            expected_url = "http://127.0.0.1:8086/write?db=metrics&precision=s&rp=autogen"
             expected_data = "cpu,host=server1 count=5 " + \
                             self.clock.time_string()
             send_mock.assert_called_once_with(expected_url, expected_data)
@@ -126,7 +126,7 @@ class TestInfluxReporter(TimedTestCase):
         with mock.patch.object(influx_reporter, "_try_send") as send_mock:
             influx_reporter.report_now()
 
-            expected_url = "http://127.0.0.1:8086/write?db=metrics&precision=s"
+            expected_url = "http://127.0.0.1:8086/write?db=metrics&precision=s&rp=autogen"
             expected_data = "event,host=server1 field=1,float=0.12,int=1i " + \
                             self.clock.time_string()
             send_mock.assert_called_once_with(expected_url, expected_data)
@@ -150,7 +150,7 @@ class TestInfluxReporter(TimedTestCase):
         with mock.patch.object(influx_reporter, "_try_send") as send_mock:
             influx_reporter.report_now()
 
-            expected_url = "http://127.0.0.1:8086/write?db=metrics&precision=s"
+            expected_url = "http://127.0.0.1:8086/write?db=metrics&precision=s&rp=autogen"
             expected_data = [
                 "event,host=server1 count=5 " + self.clock.time_string(),
                 "event,host=server1 field=1 " + self.clock.time_string()
@@ -174,7 +174,7 @@ class TestInfluxReporter(TimedTestCase):
         with mock.patch.object(influx_reporter, "_try_send") as send_mock:
             influx_reporter.report_now()
 
-            expected_url = "http://127.0.0.1:8086/write?db=metrics&precision=s"
+            expected_url = "http://127.0.0.1:8086/write?db=metrics&precision=s&rp=autogen"
             expected_data = "cpu,host=server1 count=5 " + \
                             self.clock.time_string()
             send_mock.assert_called_once_with(expected_url, expected_data)
