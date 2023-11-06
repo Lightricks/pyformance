@@ -34,7 +34,8 @@ class LineProtocolReporterTests(unittest.TestCase):
         files = [f for f in Path(reporter.path).glob("*.txt")]
         self.assertEqual(1, len(files))
         expected_file_path = f"{reporter.path}/{files[0].name}"
-        expected_lines = open(expected_file_path).read()
+        with open(expected_file_path) as f:
+            expected_lines = f.read()
         self.assertEqual(expected_lines, "test-counter count=1 1234567890")
 
     def test_get_table_name_returns_metric_key_when_prefix_empty(self) -> None:
@@ -46,6 +47,21 @@ class LineProtocolReporterTests(unittest.TestCase):
         reporter = LineProtocolReporter(prefix="prefix")
         table_name = reporter._get_table_name("metric_key")
         self.assertEqual(table_name, "prefix.metric_key")
+
+    def test_path_suffix(self) -> None:
+        reporter = LineProtocolReporter(registry=self.registry, clock=self.clock, path=self.path, path_suffix="suffix")
+        timestamp = 1234567890
+        counter = reporter.registry.counter("test-counter")
+        counter.inc()
+        reporter.report_now(timestamp=timestamp)
+
+        self.assertEqual(reporter.path, f"{self.path}/suffix")
+        files = [f for f in Path(reporter.path).glob("*.txt")]
+        self.assertEqual(1, len(files))
+        expected_file_path = f"{reporter.path}/{files[0].name}"
+        with open(expected_file_path) as f:
+            expected_lines = f.read()
+        self.assertEqual(expected_lines, f"test-counter count=1 {timestamp}")
 
     def test_stringify_values_returns_correct_string(self) -> None:
         metric_values = {"field1": 10, "field2": "value"}

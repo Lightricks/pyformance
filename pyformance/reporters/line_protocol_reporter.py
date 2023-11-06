@@ -26,8 +26,9 @@ class LineProtocolReporter(Reporter):
             self,
             registry: MetricsRegistry = None,
             reporting_interval: int = 30,
-            path: str = "/tmp/metrics",
             prefix: str = "",
+            path: str | None = None,
+            path_suffix: str | None = None,
             clock: time = None,
             global_tags: dict = None,
             reporting_precision = ReportingPrecision.SECONDS,
@@ -38,7 +39,7 @@ class LineProtocolReporter(Reporter):
         coarse precision may result in significant improvements in compression and vice versa.
         """
         super(LineProtocolReporter, self).__init__(registry, reporting_interval, clock)
-        self.path = path
+        self.path = self._set_path(path, path_suffix)
         self.prefix = prefix
 
         if not os.path.exists(self.path):
@@ -130,6 +131,16 @@ class LineProtocolReporter(Reporter):
             )
 
         return ""
+
+    @staticmethod
+    def _set_path(path: str | None, path_suffix: str | None) -> str:
+        if not path:
+            path = f"/tmp/metrics"
+        if path_suffix:
+            path += f"/{path_suffix}"
+
+        os.environ["METRICS_REPORTER_FOLDER_PATH"] = path
+        return path
 
 def _format_field_value(value) -> str:
     if isinstance(value, MarkInt):

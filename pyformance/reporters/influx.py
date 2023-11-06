@@ -170,6 +170,7 @@ class InfluxReporter(Reporter):
         for file in files:
             with open(file, "r") as metrics_file:
                 url = self._get_url()
+                LOG.debug(f"Reporting file {metrics_file.name} with data: {metrics_file.read()}")
                 if self._try_send(url, metrics_file.read()):
                     self.reported_files.append(file)
 
