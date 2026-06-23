@@ -320,7 +320,7 @@ class MetricsRegistry(object):
 
 # TODO make sure tags are supported properly
 class RegexRegistry(MetricsRegistry):
-    """
+    r"""
     A single interface used to gather metrics on a service. This class uses a regex to combine
     measures that match a pattern. For example, if you have a REST API, instead of defining
     a timer for each method, you can use a regex to capture all API calls and group them.
